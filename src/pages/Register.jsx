@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import InputField from '../components/InputField';
 import RadioGroup from '../components/RadioGroup';
 import Button from '../components/Button';
+import PageTitle from '../components/PageTitle';
 
 const Register = () => {
   const [role, setRole] = useState('motorista');
@@ -20,7 +21,8 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-blue-100 p-8">
       <div className="max-w-4xl mx-auto bg-white/50 rounded-xl shadow-md p-8">
-        <h1 className="text-3xl font-bold text-indigo-900 mb-6">Cadastro</h1>
+      <PageTitle>Cadastro</PageTitle>
+
 
         <p className="text-center text-lg font-semibold mb-4 text-indigo-800">EU SOU:</p>
         <RadioGroup
