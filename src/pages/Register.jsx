@@ -3,6 +3,7 @@ import InputField from '../components/InputField';
 import RadioGroup from '../components/RadioGroup';
 import Button from '../components/Button';
 import PageTitle from '../components/PageTitle';
+import api from 'axios'; // Importa a configuração do Axios
 
 const Register = () => {
   const [role, setRole] = useState('motorista');
@@ -13,16 +14,42 @@ const Register = () => {
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = () => {
-    // TODO: Form validation and submit
-    alert('Cadastro enviado!');
+  const handleSubmit = async () => {
+    // Validação básica do formulário
+    if (!form.name || !form.email || !form.password || !form.confirmPassword) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      alert('As senhas não coincidem.');
+      return;
+    }
+
+    const data = {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      cpf: form.cpf,
+      birth: form.birth,
+      password: form.password,
+      role, // Envia o papel selecionado (fã ou motorista)
+    };
+
+    try {
+      const response = await api.post('/register', data); // Envia os dados para o backend
+      alert('Cadastro realizado com sucesso!');
+      console.log('Resposta do backend:', response.data);
+    } catch (error) {
+      console.error('Erro ao registrar:', error);
+      alert('Erro ao realizar o cadastro. Verifique os dados e tente novamente.');
+    }
   };
 
   return (
     <div className="min-h-screen bg-blue-100 p-8">
       <div className="max-w-4xl mx-auto bg-white/50 rounded-xl shadow-md p-8">
-      <PageTitle>Cadastro</PageTitle>
-
+        <PageTitle>Cadastro</PageTitle>
 
         <p className="text-center text-lg font-semibold mb-4 text-indigo-800">EU SOU:</p>
         <RadioGroup
