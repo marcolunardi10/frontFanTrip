@@ -3,12 +3,12 @@ import InputField from '../components/InputField';
 import RadioGroup from '../components/RadioGroup';
 import Button from '../components/Button';
 import PageTitle from '../components/PageTitle';
-import api from 'axios'; // Importa a configuração do Axios
+import api from 'axios';
 
 const Register = () => {
   const [role, setRole] = useState('motorista');
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', confirmPassword: '',
+    firstName: '', lastName: '', email: '', phone: '', confirmPassword: '',
     cpf: '', birth: '', password: '',
   });
 
@@ -16,7 +16,7 @@ const Register = () => {
 
   const handleSubmit = async () => {
     // Validação básica do formulário
-    if (!form.name || !form.email || !form.password || !form.confirmPassword) {
+    if (!form.firstName || !form.lastName || !form.email || !form.password || !form.confirmPassword) {
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
@@ -27,17 +27,18 @@ const Register = () => {
     }
 
     const data = {
-      name: form.name,
+      nome: form.firstName,
+      sobrenome: form.lastName,
       email: form.email,
-      phone: form.phone,
-      cpf: form.cpf,
-      birth: form.birth,
-      password: form.password,
-      role, // Envia o papel selecionado (fã ou motorista)
+      telefone: form.phone,
+      cpf_cnpj: form.cpf,
+      data_nascimento: form.birth,
+      senha: form.password,
+      tipo_usuario: role
     };
 
     try {
-      const response = await api.post('/register', data); // Envia os dados para o backend
+      const response = await api.post('http://127.0.0.1:8000/api/v1/usuarios', data);
       alert('Cadastro realizado com sucesso!');
       console.log('Resposta do backend:', response.data);
     } catch (error) {
@@ -62,7 +63,8 @@ const Register = () => {
         />
 
         <div className="grid grid-cols-2 gap-6 mt-6">
-          <InputField label="Nome Completo" name="name" value={form.name} onChange={handleChange} />
+          <InputField label="Nome" name="firstName" value={form.firstName} onChange={handleChange} />
+          <InputField label="Sobrenome" name="lastName" value={form.lastName} onChange={handleChange} />
           <InputField label="CPF/CNPJ" name="cpf" value={form.cpf} onChange={handleChange} />
           <InputField label="Email" name="email" value={form.email} onChange={handleChange} />
           <InputField label="Data de nascimento" name="birth" type="date" value={form.birth} onChange={handleChange} />
