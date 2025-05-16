@@ -1,16 +1,45 @@
 import React, { useState } from 'react';
 import InputField from '../components/InputField';
 import Button from '../components/Button';
+import api from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ user: '', password: '' });
+  const navigate = useNavigate();
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleLogin = () => {
-    // TODO: Handle login logic
-    alert('Login feito!');
+  const handleLogin = async () => {
+    if (!form.user || !form.password) {
+      alert('Preencha todos os campos!');
+      return;
+    }
+
+    try {
+      const response = await api.post('http://127.0.0.1:8000/api/v1/usuarios/login', {
+        email: form.user,
+        senha: form.password
+      });
+
+      // Suponha que o backend retorne um token ou dados do usuário:
+      const { token, usuario } = response.data;
+
+      // Salvar token localmente (para manter o login)
+      localStorage.setItem('token', token);
+      localStorage.setItem('usuario', JSON.stringify(usuario));
+
+      alert('Login realizado com sucesso!');
+      console.log('Usuário logado:', usuario);
+
+      // Redirecionar para o painel principal, por exemplo:
+      // window.location.href = '/painel';
+
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      alert('Credenciais inválidas. Tente novamente.');
+    }
   };
 
   return (
@@ -38,7 +67,7 @@ const Login = () => {
           </button>
         </div>
         <div className="flex justify-end mt-2 text-indigo-800 font-semibold">
-          <button onClick={() => alert('Cadastro page')}>Cadastrar</button>
+        <button onClick={() => navigate('/register')}>Cadastrar</button>
         </div>
         <h2 className="text-center text-2xl mt-6 font-bold text-indigo-900">Login</h2>
         <div className="mt-4">

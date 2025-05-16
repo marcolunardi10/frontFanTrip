@@ -4,6 +4,7 @@ import RadioGroup from '../components/RadioGroup';
 import Button from '../components/Button';
 import PageTitle from '../components/PageTitle';
 import api from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
   const [role, setRole] = useState('motorista');
@@ -11,12 +12,13 @@ const Register = () => {
     firstName: '', lastName: '', email: '', phone: '', confirmPassword: '',
     cpf: '', birth: '', password: '',
   });
+  const navigate = useNavigate();
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async () => {
     // Validação básica do formulário
-    if (!form.firstName || !form.lastName || !form.email || !form.password || !form.confirmPassword) {
+    if (!form.firstName || !form.lastName || !form.email || !form.password || !form.confirmPassword || !form.cpf || !form.birth || !form.phone) {
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
@@ -41,6 +43,12 @@ const Register = () => {
       const response = await api.post('http://127.0.0.1:8000/api/v1/usuarios', data);
       alert('Cadastro realizado com sucesso!');
       console.log('Resposta do backend:', response.data);
+    
+      if (role === 'motorista') {
+        navigate('/veichle');
+      } else {
+        navigate('/'); 
+      }
     } catch (error) {
       console.error('Erro ao registrar:', error);
       alert('Erro ao realizar o cadastro. Verifique os dados e tente novamente.');
