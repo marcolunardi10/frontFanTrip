@@ -24,8 +24,17 @@ const EventManager = () => {
     fetchEventos();
   }, []);
 
+  const [searching, setSearching] = useState(false);
+
   const handleSearch = () => {
+    setSearching(true);
     fetchEventos(search);
+  };
+
+  const handleClearFilters = () => {
+    setSearch({ uf: '', cidade: '', evento: '' });
+    setSearching(false);
+    fetchEventos(); // Recarrega todos
   };
 
   const handleInputChange = e => {
@@ -42,39 +51,39 @@ const EventManager = () => {
 
       {/* Formulário de busca */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <input 
-          placeholder="UF" 
-          name="uf" 
-          value={search.uf} 
-          onChange={handleInputChange} 
-          className="p-2 rounded border" 
+        <input
+          placeholder="UF"
+          name="uf"
+          value={search.uf}
+          onChange={handleInputChange}
+          className="p-2 rounded border"
         />
-        <input 
-          placeholder="Cidade" 
-          name="cidade" 
-          value={search.cidade} 
-          onChange={handleInputChange} 
-          className="p-2 rounded border" 
+        <input
+          placeholder="Cidade"
+          name="cidade"
+          value={search.cidade}
+          onChange={handleInputChange}
+          className="p-2 rounded border"
         />
-        <input 
-          placeholder="Nome do Evento" 
-          name="evento" 
-          value={search.evento} 
-          onChange={handleInputChange} 
-          className="p-2 rounded border" 
+        <input
+          placeholder="Nome do Evento"
+          name="evento"
+          value={search.evento}
+          onChange={handleInputChange}
+          className="p-2 rounded border"
         />
       </div>
 
       {/* Botões */}
       <div className="flex space-x-4 mb-6">
-        <button 
+        <button
           onClick={handleSearch}
           className="bg-indigo-800 text-white px-6 py-2 rounded shadow hover:bg-indigo-900"
         >
           Buscar
         </button>
-        <button 
-          onClick={handleCreate} 
+        <button
+          onClick={handleCreate}
           className="bg-indigo-800 text-white px-6 py-2 rounded shadow hover:bg-indigo-900"
         >
           Criar
@@ -84,25 +93,42 @@ const EventManager = () => {
       <div className="flex">
         {/* Tabela */}
         <table className="border-collapse table-fixed border border-indigo-900 w-full">
-  <thead>
-    <tr className="bg-indigo-200">
-      <th className="border p-2 text-left w-1/4">Nome</th>
-      <th className="border p-2 text-left w-1/4">Cidade</th>
-      <th className="border p-2 text-center w-1/8">UF</th>
-      <th className="border p-2 text-center w-1/4">Data</th>
-    </tr>
-  </thead>
-  <tbody>
-    {tabela.map((item, idx) => (
-      <tr key={idx} className="hover:bg-indigo-50">
-        <td className="border p-2 text-left">{item.nome}</td>
-        <td className="border p-2 text-left">{item.cidade}</td>
-        <td className="border p-2 text-center">{item.uf}</td>
-        <td className="border p-2 text-center">{item.data}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+          <thead>
+            <tr className="bg-indigo-200">
+              <th className="border p-2 text-left w-1/4">Nome</th>
+              <th className="border p-2 text-left w-1/4">Cidade</th>
+              <th className="border p-2 text-center w-1/8">UF</th>
+              <th className="border p-2 text-center w-1/4">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tabela.length === 0 && searching && (
+              <tr>
+                <td colSpan={4} className="text-center py-6 text-gray-500 font-medium">
+                  Nenhum evento encontrado para os filtros aplicados.
+                  <div className="mt-4">
+                    <button
+                      onClick={handleClearFilters}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+                    >
+                      Limpar Filtros
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )}
+
+            {tabela.map((item, idx) => (
+              <tr key={idx} className="hover:bg-indigo-50">
+                <td className="border p-2 text-left">{item.nome}</td>
+                <td className="border p-2 text-left">{item.cidade}</td>
+                <td className="border p-2 text-center">{item.uf}</td>
+                <td className="border p-2 text-center">{item.data}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
 
 
         {/* Lista de eventos */}
@@ -117,13 +143,13 @@ const EventManager = () => {
       </div>
 
       {/* Modal de criação */}
-      <EventCreateModal 
-        isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
+      <EventCreateModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
         onSave={() => {
           fetchEventos();
           setShowModal(false);
-        }} 
+        }}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PageTitle from '../components/PageTitle';
+import InputMask from 'react-input-mask';
 
 
 const VehicleRegister = () => {
@@ -8,20 +9,75 @@ const VehicleRegister = () => {
   const [plateType, setPlateType] = useState('antiga');
   const [plateNumber, setPlateNumber] = useState('');
 
-  const handleSave = () => {
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    setError(''); // limpa erro anterior
+
+    if (!plateNumber || plateNumber.length < 7) {
+      setError('A placa deve conter no mínimo 7 caracteres.');
+      return;
+    }
+
+    if (plateNumber.length > 8) {
+      setError('A placa deve conter no máximo 8 caracteres.');
+      return;
+    }
+
+    if (!vehicle) {
+      setError('Selecione um tipo de veículo.');
+      return;
+    }
+
     const data = {
-      vehicle,
-      capacity,
-      plateType,
-      plateNumber
+      tipo_veiculo: vehicle,
+      capacidade: capacity,
+      fl_mercosul: plateType === 'mercosul',
+      placa: plateNumber.toUpperCase(),
+      id_usuario: 1
     };
-    alert(`Veículo salvo:\n${JSON.stringify(data, null, 2)}`);
+
+    try {
+      const response = await fetch('http://localhost:8000/veiculos/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert('Veículo salvo com sucesso!');
+        // limpar campos:
+        setVehicle('');
+        setCapacity(1);
+        setPlateNumber('');
+        setPlateType('antiga');
+      } else if (response.status === 409) {
+        setError('Já existe um veículo cadastrado com essa placa.');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Erro ao salvar veículo.');
+      }
+    } catch (err) {
+      setError('Erro de conexão com o servidor: ' + err.message);
+    }
+  };
+
+  const handleCancel = () => {
+    setVehicle('');
+    setCapacity(1);
+    setPlateNumber('');
+    setPlateType('antiga');
+    setError('');
+    alert('Cadastro cancelado.');
   };
 
   return (
     <div className="min-h-screen bg-blue-100 flex flex-col items-center justify-start px-4 py-10 space-y-8 text-indigo-900">
 
-    <PageTitle>Cadastro de Veículo</PageTitle>
+      <PageTitle>Cadastro de Veículo</PageTitle>
 
       {/* Seletor de Veículo */}
       <div className="w-full max-w-sm">
@@ -81,6 +137,12 @@ const VehicleRegister = () => {
             <span>Mercosul</span>
           </label>
         </div>
+        {error && (
+          <div className="text-red-600 mt-2 font-medium text-center max-w-sm">
+            {error}
+          </div>
+        )}
+
       </div>
 
       {/* Número da Placa */}
@@ -95,11 +157,12 @@ const VehicleRegister = () => {
       {/* Botões */}
       <div className="flex justify-center space-x-8 mt-6">
         <button
-          onClick={() => alert('Cadastro cancelado')}
+          onClick={handleCancel}
           className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg shadow transition"
         >
           Cancelar
         </button>
+
         <button
           onClick={handleSave}
           className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg shadow transition"

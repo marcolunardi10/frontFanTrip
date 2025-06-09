@@ -14,6 +14,11 @@ const EventCreateModal = ({ isOpen, onClose, onSave }) => {
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const handleCancel = () => {
+    setForm({ nome: '', cidade: '', uf: '', data: '' });
+    onClose();
+  };
+
   // Buscar UFs na montagem
   useEffect(() => {
     const fetchUFs = async () => {
@@ -47,14 +52,31 @@ const EventCreateModal = ({ isOpen, onClose, onSave }) => {
     }
 
     try {
+      const selectedDate = new Date(form.data);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // zera hora
+
+      if (selectedDate < today) {
+        alert('A data do evento não pode ser no passado.');
+        return;
+      }
+
       const response = await api.post('http://127.0.0.1:8000/eventos', form);
       alert('Evento criado com sucesso!');
       console.log('Resposta do backend:', response.data);
       onSave();
       onClose();
+
     } catch (error) {
       console.error('Erro ao criar evento:', error);
-      alert('Erro ao criar evento.');
+
+      if (error.response?.status === 409) {
+        alert('Já existe um evento com esse nome.');
+      } else if (error.response?.data?.detail) {
+        alert(`Erro ao criar evento: ${error.response.data.detail}`);
+      } else {
+        alert('Erro inesperado ao criar evento. Tente novamente.');
+      }
     }
   };
 
@@ -114,7 +136,7 @@ const EventCreateModal = ({ isOpen, onClose, onSave }) => {
 
         <div className="flex justify-end space-x-4">
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
           >
             Cancelar
