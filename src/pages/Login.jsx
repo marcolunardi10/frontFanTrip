@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import InputField from '../components/InputField';
 import Button from '../components/Button';
-import api from 'axios';
+import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -12,10 +12,7 @@ const Login = () => {
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleLogin = async () => {
-    if (!form.user || !form.password) {
-      alert('Preencha todos os campos!');
-      return;
-    }
+    // ... (verificação de campos)
 
     try {
       const response = await api.post('http://127.0.0.1:8000/api/v1/usuarios/login', {
@@ -23,24 +20,28 @@ const Login = () => {
         senha: form.password
       });
 
-      // Suponha que o backend retorne um token ou dados do usuário:
-      const { token, usuario } = response.data;
+      // --- INÍCIO DA CORREÇÃO PRINCIPAL ---
 
-      // Salvar token localmente (para manter o login)
+      // Usamos o operador "rest" (...) para separar o token do resto dos dados.
+      // 1. 'token' pega a propriedade "token".
+      // 2. '...dadosDoUsuario' cria um NOVO objeto contendo TODAS as outras propriedades (id, nome, email, etc.).
+      const { token, ...dadosDoUsuario } = response.data;
+
+      // Agora salvamos o token e o objeto com os dados do usuário corretamente.
       localStorage.setItem('token', token);
-      localStorage.setItem('usuario', JSON.stringify(usuario));
+      localStorage.setItem('usuario', JSON.stringify(dadosDoUsuario));
 
-      alert('Login realizado com sucesso!');
-      console.log('Usuário logado:', usuario);
-
-      // Redirecionar para o painel principal, por exemplo:
-      // window.location.href = '/painel';
+      // --- FIM DA CORREÇÃO PRINCIPAL ---
+      
+      // O redirecionamento continua o mesmo
+      navigate('/event');
 
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       alert('Credenciais inválidas. Tente novamente.');
     }
   };
+
 
   return (
     <div className="min-h-screen bg-blue-100 flex flex-col justify-center items-center p-4">
@@ -67,7 +68,7 @@ const Login = () => {
           </button>
         </div>
         <div className="flex justify-end mt-2 text-indigo-800 font-semibold">
-        <button onClick={() => navigate('/register')}>Cadastrar</button>
+          <button onClick={() => navigate('/register')}>Cadastrar</button>
         </div>
         <h2 className="text-center text-2xl mt-6 font-bold text-indigo-900">Login</h2>
         <div className="mt-4">

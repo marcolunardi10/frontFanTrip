@@ -3,7 +3,7 @@ import InputField from '../components/InputField';
 import RadioGroup from '../components/RadioGroup';
 import Button from '../components/Button';
 import PageTitle from '../components/PageTitle';
-import api from 'axios';
+import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const Register = () => {

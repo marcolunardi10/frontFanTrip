@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PageTitle from '../components/PageTitle';
-import InputMask from 'react-input-mask';
+import api from '../services/api';
 
 
 const VehicleRegister = () => {

@@ -1,19 +1,38 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageTitle from '../components/PageTitle';
 import EventCreateModal from '../components/EventCreateModal';
-import api from 'axios';
+import api from '../services/api';
 
 const EventManager = () => {
+  const navigate = useNavigate();
+
+  // Bloco para obter dados do usuário logado
+  const [usuario, setUsuario] = useState(null);
+
+  useEffect(() => {
+    const usuarioString = localStorage.getItem('usuario');
+    if (usuarioString && usuarioString !== 'undefined') {
+      try {
+        setUsuario(JSON.parse(usuarioString));
+      } catch (error) {
+        console.error("Erro ao ler dados do usuário do localStorage:", error);
+      }
+    }
+  }, []); // Executa apenas uma vez quando o componente monta
+
+  // Estados existentes do componente
   const [search, setSearch] = useState({ uf: '', cidade: '', evento: '' });
   const [showModal, setShowModal] = useState(false);
   const [eventos, setEventos] = useState([]);
   const [tabela, setTabela] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   const fetchEventos = async (params = {}) => {
     try {
       const response = await api.get('http://127.0.0.1:8000/eventos/', { params });
       setEventos(response.data);
-      setTabela(response.data); // Pode ter tratamento diferente se quiser.
+      setTabela(response.data);
     } catch (error) {
       console.error('Erro ao buscar eventos:', error);
       alert('Erro ao buscar eventos.');
@@ -24,8 +43,6 @@ const EventManager = () => {
     fetchEventos();
   }, []);
 
-  const [searching, setSearching] = useState(false);
-
   const handleSearch = () => {
     setSearching(true);
     fetchEventos(search);
@@ -34,7 +51,7 @@ const EventManager = () => {
   const handleClearFilters = () => {
     setSearch({ uf: '', cidade: '', evento: '' });
     setSearching(false);
-    fetchEventos(); // Recarrega todos
+    fetchEventos();
   };
 
   const handleInputChange = e => {
@@ -88,6 +105,16 @@ const EventManager = () => {
         >
           Criar
         </button>
+        
+        {/* Botão condicional para motorista */}
+        {usuario?.tipo_usuario === 'motorista' && (
+          <button
+            onClick={() => navigate('/vehicle')}
+            className="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700"
+          >
+            Cadastrar Veículo
+          </button>
+        )}
       </div>
 
       <div className="flex">
@@ -117,7 +144,6 @@ const EventManager = () => {
                 </td>
               </tr>
             )}
-
             {tabela.map((item, idx) => (
               <tr key={idx} className="hover:bg-indigo-50">
                 <td className="border p-2 text-left">{item.nome}</td>
@@ -129,10 +155,8 @@ const EventManager = () => {
           </tbody>
         </table>
 
-
-
         {/* Lista de eventos */}
-        <div className="flex flex-col space-y-4 w-1/3">
+        <div className="flex flex-col space-y-4 w-1/3 ml-4">
           {eventos.map(evento => (
             <div key={evento.id} className="flex items-center space-x-2 bg-white p-4 rounded shadow hover:bg-gray-100 transition cursor-pointer">
               <span className="text-2xl">★</span>
