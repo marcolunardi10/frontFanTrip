@@ -102,14 +102,28 @@ const EventManager = () => {
 
   const handleReservarLugar = async (evento) => {
     if (!usuario) return alert('Faça login para reservar uma vaga.');
+    
     if (window.confirm(`Deseja realmente reservar sua vaga para o evento "${evento.nome_evento}"?`)) {
       try {
-        await api.post('/viagens/', { id_usuario: usuario.id, id_evento: evento.id });
+        // 1. Monta o payload com os IDs do usuário (fã) e do evento
+        const payload = { 
+          id_usuario: usuario.id, 
+          id_evento: evento.id 
+        };
+
+        // 2. Chama o novo endpoint no backend para criar a "viagem"
+        await api.post('/viagens/', payload);
+
         alert('Vaga reservada com sucesso!');
+        
+        // 3. Recarrega a lista de eventos para atualizar a contagem de vagas na tela
         const response = await api.get('/eventos/');
         setTabela(response.data);
+
       } catch (error) {
+        // 4. Exibe a mensagem de erro específica vinda do backend
         alert(error.response?.data?.detail || 'Não foi possível reservar a vaga.');
+        console.error("Erro ao reservar vaga:", error);
       }
     }
   };
