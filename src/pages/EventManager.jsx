@@ -30,34 +30,47 @@ const EventManager = () => {
     }
   }, []);
 
-  // Busca os dados iniciais (todos os eventos e veículos do motorista)
-  // Roda apenas quando o usuário é definido.
+  // Busca os dados do backend (eventos e veículos do motorista)
   useEffect(() => {
-    const fetchInitialData = async () => {
+    // Só busca os dados depois que soubermos quem é o usuário
+    if (!usuario) return;
+
+    const fetchAllData = async () => {
+      // O backend precisa do ID do usuário logado para saber se ele já está inscrito
+      const activeFilters = Object.fromEntries(
+        Object.entries(search).filter(([_, value]) => value !== '')
+      );
+      const params = { ...activeFilters, id_usuario_logado: usuario.id };
+      
       try {
-        const response = await api.get('/eventos/');
-        setTabela(response.data);
+        const [eventosResponse, veiculosResponse] = await Promise.all([
+          api.get('/eventos/', { params }),
+          usuario.tipo_usuario === 'motorista'
+            ? api.get(`/veiculos/usuario/${usuario.id}`)
+            : Promise.resolve({ data: [] })
+        ]);
+        
+        setTabela(eventosResponse.data);
+        setMeusVeiculos(veiculosResponse.data);
       } catch (error) {
-        console.error('Erro ao buscar eventos iniciais:', error);
+        console.error("Erro ao carregar dados da página:", error);
       }
     };
     
-    fetchInitialData();
+    fetchAllData();
+  }, [usuario, search]);
 
-    if (usuario?.tipo_usuario === 'motorista') {
-      const fetchMeusVeiculos = async () => {
-        try {
-          const response = await api.get(`/veiculos/usuario/${usuario.id}`);
-          setMeusVeiculos(response.data);
-        } catch (error) {
-          console.error('Erro ao buscar veículos do motorista:', error);
-        }
-      };
-      fetchMeusVeiculos();
+  // Função para recarregar a lista de eventos (usada após reservar ou cancelar)
+  const refreshEventList = async () => {
+    const params = { id_usuario_logado: usuario?.id };
+    try {
+      const response = await api.get('/eventos/', { params });
+      setTabela(response.data);
+    } catch (error) {
+      console.error("Erro ao recarregar eventos:", error);
     }
-  }, [usuario]);
-  
-  // Função para lidar com a mudança nos inputs de busca
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setSearch(prevState => ({
@@ -65,31 +78,6 @@ const EventManager = () => {
         [name]: value
     }));
   };
-
-  // Função para aplicar os filtros ao clicar no botão "Buscar"
-  const handleSearch = async () => {
-    const activeFilters = Object.fromEntries(
-      Object.entries(search).filter(([_, value]) => value !== '')
-    );
-    try {
-      const response = await api.get('/eventos/', { params: activeFilters });
-      setTabela(response.data);
-    } catch (error) {
-      console.error('Erro ao buscar com filtros:', error);
-    }
-  };
-
-  // Função para limpar os filtros e recarregar a lista completa
-  const handleClearFilters = async () => {
-    setSearch({ nome_evento: '', cidade_saida: '', cidade_evento: '' });
-    try {
-        const response = await api.get('/eventos/');
-        setTabela(response.data);
-    } catch (error) {
-        console.error('Erro ao limpar filtros e buscar eventos:', error);
-    }
-  };
-
 
   const handleCreate = () => {
     if (usuario?.tipo_usuario === 'motorista' && meusVeiculos.length === 0) {
@@ -102,35 +90,33 @@ const EventManager = () => {
 
   const handleReservarLugar = async (evento) => {
     if (!usuario) return alert('Faça login para reservar uma vaga.');
-    
     if (window.confirm(`Deseja realmente reservar sua vaga para o evento "${evento.nome_evento}"?`)) {
       try {
-        // 1. Monta o payload com os IDs do usuário (fã) e do evento
-        const payload = { 
-          id_usuario: usuario.id, 
-          id_evento: evento.id 
-        };
-
-        // 2. Chama o novo endpoint no backend para criar a "viagem"
-        await api.post('/viagens/', payload);
-
+        await api.post('/viagens/', { id_usuario: usuario.id, id_evento: evento.id });
         alert('Vaga reservada com sucesso!');
-        
-        // 3. Recarrega a lista de eventos para atualizar a contagem de vagas na tela
-        const response = await api.get('/eventos/');
-        setTabela(response.data);
-
+        refreshEventList();
       } catch (error) {
-        // 4. Exibe a mensagem de erro específica vinda do backend
         alert(error.response?.data?.detail || 'Não foi possível reservar a vaga.');
-        console.error("Erro ao reservar vaga:", error);
       }
     }
   };
 
+  const handleCancelarReserva = async (evento) => {
+    if (!usuario) return;
+    if (window.confirm(`Deseja realmente CANCELAR sua reserva para o evento "${evento.nome_evento}"?`)) {
+      try {
+        await api.delete(`/viagens/usuario/${usuario.id}/evento/${evento.id}`);
+        alert('Reserva cancelada com sucesso!');
+        refreshEventList();
+      } catch (error) {
+        alert(error.response?.data?.detail || 'Não foi possível cancelar a reserva.');
+      }
+    }
+  };
+  
   const onEventSave = () => {
     setShowModal(false);
-    handleClearFilters(); // Limpa filtros e recarrega a lista
+    refreshEventList();
   };
 
   return (
@@ -162,12 +148,9 @@ const EventManager = () => {
       </div>
 
       <div className="flex space-x-4 mb-6">
-        {/* Botão de Buscar Adicionado */}
-        <button onClick={handleSearch} className="bg-blue-800 text-white px-6 py-2 rounded shadow hover:bg-blue-900">
-          Buscar
-        </button>
-        <button onClick={handleClearFilters} className="bg-gray-600 text-white px-6 py-2 rounded shadow hover:bg-gray-700">
-          Limpar Filtros
+        {/* O botão de buscar/limpar agora é controlado pela mesma lógica do useEffect */}
+        <button onClick={() => setSearch({ nome_evento: '', cidade_saida: '', cidade_evento: '' })} className="bg-indigo-800 text-white px-6 py-2 rounded shadow hover:bg-indigo-900">
+          Buscar / Limpar Filtros
         </button>
         {usuario?.tipo_usuario === 'motorista' && (
           <>
@@ -190,47 +173,60 @@ const EventManager = () => {
               <th className="p-3 text-left">Saída de</th>
               <th className="p-3 text-center">Data Evento</th>
               <th className="p-3 text-center">Data Saída</th>
-              {usuario?.tipo_usuario === 'fa' ? (
+              {usuario?.tipo_usuario === 'fa' && (
                 <>
                   <th className="p-3 text-left">Veículo</th>
                   <th className="p-3 text-center">Vagas</th>
                   <th className="p-3 text-center">Ação</th>
                 </>
-              ) : (
-                <th className="p-3 text-left">Veículo / Placa</th>
+              )}
+              {usuario?.tipo_usuario === 'motorista' && (
+                <th className="p-3 text-left">Vagas (Ocupadas / Total)</th>
               )}
             </tr>
           </thead>
           <tbody>
-            {tabela.map((item) => (
-              <tr key={item.id} className="border-b border-gray-200 hover:bg-indigo-50">
-                <td className="p-3 font-medium">{item.nome_evento}</td>
-                <td className="p-3">{item.cidade_evento}/{item.uf_evento}</td>
-                <td className="p-3">{item.cidade_saida}/{item.uf_saida}</td>
-                <td className="p-3 text-center">{new Date(item.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                <td className="p-3 text-center">{new Date(item.data_saida + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                {/* Lógica para Fãs */}
-                {usuario?.tipo_usuario === 'fa' && (
-                  <>
-                    <td className="p-3">{item.veiculo ? item.veiculo.tipo_veiculo : 'N/A'}</td>
-                    <td className="p-3 text-center">{item.veiculo ? `${item.vagas_ocupadas} / ${item.veiculo.capacidade}` : 'N/A'}</td>
-                    <td className="p-3 text-center">
-                      <button 
-                        onClick={() => handleReservarLugar(item)} 
-                        className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700 disabled:bg-gray-400"
-                        disabled={!item.veiculo || item.vagas_ocupadas >= item.veiculo.capacidade}
-                      >
-                        Reservar
-                      </button>
-                    </td>
-                  </>
-                )}
-                {/* Lógica para Motoristas */}
-                {usuario?.tipo_usuario === 'motorista' && (
-                    <td className="p-3">{item.veiculo ? `${item.veiculo.tipo_veiculo} - ${item.veiculo.placa}` : 'Não definido'}</td>
-                )}
-              </tr>
-            ))}
+            {tabela.map((item) => {
+              const isSubscribed = !!item.minha_viagem_id;
+
+              return (
+                <tr key={item.id} className="border-b border-gray-200 hover:bg-indigo-50">
+                  <td className="p-3 font-medium">{item.nome_evento}</td>
+                  <td className="p-3">{item.cidade_evento}/{item.uf_evento}</td>
+                  <td className="p-3">{item.cidade_saida}/{item.uf_saida}</td>
+                  <td className="p-3 text-center">{new Date(item.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                  <td className="p-3 text-center">{new Date(item.data_saida + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                  
+                  {usuario?.tipo_usuario === 'fa' && (
+                    <>
+                      <td className="p-3">{item.veiculo ? item.veiculo.tipo_veiculo : 'N/A'}</td>
+                      <td className="p-3 text-center">{item.veiculo ? `${item.vagas_ocupadas} / ${item.veiculo.capacidade}` : 'N/A'}</td>
+                      <td className="p-3 text-center">
+                        {isSubscribed ? (
+                          <button 
+                            onClick={() => handleCancelarReserva(item)}
+                            className="bg-red-600 text-white px-3 py-1 text-sm rounded hover:bg-red-700"
+                          >
+                            Cancelar
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleReservarLugar(item)} 
+                            className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700 disabled:bg-gray-400"
+                            disabled={!item.veiculo || item.vagas_ocupadas >= item.veiculo.capacidade}
+                          >
+                            Reservar
+                          </button>
+                        )}
+                      </td>
+                    </>
+                  )}
+                  {usuario?.tipo_usuario === 'motorista' && (
+                      <td className="p-3 text-center font-bold">{item.veiculo ? `${item.vagas_ocupadas} / ${item.veiculo.capacidade}` : 'N/A'}</td>
+                  )}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
