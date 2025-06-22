@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IMaskInput } from 'react-imask'; // 1. Importe o componente de máscara
 import PageTitle from '../components/PageTitle';
 import api from '../services/api'; // Usando sua instância do Axios para consistência
+import { useNavigate } from 'react-router-dom';
 
 const VehicleRegister = () => {
   const [vehicle, setVehicle] = useState('');
@@ -9,6 +10,7 @@ const VehicleRegister = () => {
   const [plateType, setPlateType] = useState('antiga');
   const [plateNumber, setPlateNumber] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSave = async () => {
     setError(''); // Limpa erro anterior
@@ -43,7 +45,7 @@ const VehicleRegister = () => {
     try {
       await api.post('/veiculos/', data);
       alert('Veículo salvo com sucesso!');
-      // ... limpar campos ...
+      navigate('/event');
     } catch (err) {
       if (err.response) {
         const errorData = err.response.data;
